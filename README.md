@@ -112,24 +112,6 @@ npm run build
 npm run start
 ```
 
-## ENV
-
-```
-# SQL
-POSTGRES_USER=
-POSTGRES_HOST=
-POSTGRES_PASSWORD=
-POSTGRES_DATABASE=
-
-# Settings MS
-APP_NAME=360Hipotecario
-PORT=8000
-
-# Auth Settings
-JWT_SECRET=AbCde12334
-JWT_EXP=86400
-```
-
 # Docker
 
 ## Docker build

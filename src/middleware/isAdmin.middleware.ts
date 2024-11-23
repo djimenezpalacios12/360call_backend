@@ -3,6 +3,8 @@ import createError from "http-errors";
 
 import { logger } from "../config/loggersApp.config";
 import { decodedToken } from "../utils/token.utils";
+import { RolesEntity } from "../entities/roles.entity";
+import { searchRol } from "../services/user.services";
 
 // TODO: Added middleware for isAdmin
 const isAdmin = async (req: Request, res: Response, next: NextFunction) => {
