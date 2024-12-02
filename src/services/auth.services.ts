@@ -1,3 +1,4 @@
+import { AreaEntity } from "src/entities/areas.entity";
 import { logger } from "../config/loggersApp.config";
 import { dataBaseConfig } from "../database/postgresql.database";
 import { UsuariosEntity } from "../entities/usuarios.entity";
@@ -17,6 +18,26 @@ export const retrieveUser = async (signIn: SignIn) => {
     return usuarioEntity;
   } catch (err: any) {
     logger.error({ err: err.message });
+    return null;
+  }
+};
+
+export const userCredentialsAi = async (id_usuario: string) => {
+  try {
+    const userCredentials = await dataBaseConfig
+      .getRepository(AreaEntity)
+      .createQueryBuilder()
+      .leftJoinAndSelect(UsuariosEntity, "UsuariosEntity", "UsuariosEntity.id_area = AreaEntity.id_area")
+      .where("UsuariosEntity.id_usuario = :id_usuario", {
+        id_usuario: id_usuario,
+      })
+      //   .where("RolesEntity.id_rol = :id_rol", { id_rol: id_rol })
+      //   .select(["RolesEntity.rol"])
+      .getOne();
+
+    return userCredentials;
+  } catch (err: any) {
+    logger.error({ err });
     return null;
   }
 };

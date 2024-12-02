@@ -10,7 +10,9 @@ import createError from "http-errors";
 import { endpointResponse } from "./utils/endpointResponse.utils";
 import { logger } from "./config/loggersApp.config";
 import { dataBaseConfig } from "./database/postgresql.database";
+
 import authRoutes from "./routes/auth.route";
+import iaRoutes from "./routes/ia.route";
 
 // Express
 const app = express();
@@ -85,9 +87,10 @@ app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 //Routes Middlware
 app.use(express.json());
 app.get("/", (req: any, res: any) => {
-  res.status(200).json({ message: "Bienvenido al MS Bitacora de Thinker" });
+  res.status(200).json({ message: "Bienvenido..." });
 });
 app.use("/v1/api/auth", authRoutes);
+app.use("/v1/api/ia", iaRoutes);
 
 // Error handler - catch 404 and forward to error handler
 app.use(function (req, res, next) {
