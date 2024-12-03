@@ -1,7 +1,7 @@
-import { AreaEntity } from "src/entities/areas.entity";
 import { logger } from "../config/loggersApp.config";
 import { dataBaseConfig } from "../database/postgresql.database";
 import { UsuariosEntity } from "../entities/usuarios.entity";
+import { AreaEntity } from "../entities/areas.entity";
 import { SignIn } from "../interfaces/auth.interface";
 
 export const retrieveUser = async (signIn: SignIn) => {

@@ -112,7 +112,7 @@ export const chatAssistant = async (req: Request, res: Response, next: any): Pro
         stream: true,
         temperature: 0.03,
         top_p: 1,
-        model: "gpt-4o-3",
+        model: "gpt-4o",
         instructions: instruction,
       })
       .on("textCreated", (text) => process.stdout.write("\ntextCreated assistant > "))
