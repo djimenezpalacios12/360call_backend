@@ -8,6 +8,7 @@ import { endpointResponse } from "../utils/endpointResponse.utils";
 import { userCredentialsAi } from "../services/auth.services";
 import { getClient } from "../utils/azure.utils";
 import { donwloadFileServices } from "../services/donwloadFile.services";
+import { createThread, messageThread } from "../services/openai.services";
 
 // Download File from IA
 export const downloadFileIA = async (req: Request, res: Response, next: any): Promise<any> => {
@@ -36,17 +37,16 @@ export const downloadFileIA = async (req: Request, res: Response, next: any): Pr
 // Chat with assistant
 export const chatAssistant = async (req: Request, res: Response, next: any): Promise<any> => {
   try {
+    // request data
+    const body = req.body;
+
     // Settings headers SSE
     res.setHeader("Content-Type", "text/plain");
     res.setHeader("Transfer-Encoding", "chunked");
     res.flushHeaders();
 
-    const body = req.body;
-    const assistantsClient = getClient();
-
-    // Retrieve token and data
+    // Credentiales User
     const Authorization = req.get("Authorization") || req.query.token || req.body.token;
-    const tokenparts = splitTokenParts(Authorization);
     const infoUser: any = decodedToken(Authorization);
     const id_usuario = infoUser?.payload?.id_usuario;
     const credentials = await userCredentialsAi(id_usuario);
@@ -59,51 +59,66 @@ export const chatAssistant = async (req: Request, res: Response, next: any): Pro
         })
       );
     }
-    debugger;
 
     // IA parameters
+    const assistantsClient = getClient();
     const assistantId = credentials.asistente;
-    // const vectorStore = credentials.vectores;
-    const instruction =
-      "Como gestor de conocimiento te haré preguntas, usa tu File search o tu Code interpreter para abrir y leer los archivos proporcionados, cuando sea necesario. Utiliza tu code interpreter si es necesario";
-    const contentBody = body[body.length - 1]?.content;
-    const content = `${contentBody} ${contentBody}`;
-    let threadId = body[body.length - 1]?.threadId;
+    const vectorStore = credentials.vectores;
+
+    const content = body[body.length - 1]?.content;
     let text = "";
     const objectResponse = {
       response: "",
       id_file_download: "",
-      thread_id_openai: threadId,
+      thread_id_openai: body[body.length - 1]?.threadId,
       id_image_download: "",
     };
 
-    // Create attachment for code_interpreter
-    const attachments: MessageCreateParams.Attachment[] | null | undefined = [];
+    // Create attachment for code_interpreter and file list for system prompt
+    const attachmentsCode: MessageCreateParams.Attachment[] | null | undefined = [];
+    const attachmentsSearch: string[] = [];
     if (body[body.length - 1]?.filesCodeInterpreter.length > 0) {
       const idFiles = body[body.length - 1]?.filesCodeInterpreter;
       idFiles.forEach((idFile: string) => {
-        attachments.push({
+        attachmentsCode.push({
           file_id: idFile,
           tools: [{ type: "code_interpreter" }],
         });
       });
     }
 
+    if (body[body.length - 1]?.fileSeach.length > 0) {
+      const idFiles = body[body.length - 1]?.fileSeach;
+      idFiles.forEach((fileName: string) => {
+        attachmentsSearch.push(fileName);
+      });
+    }
+
+    const instruction = `Como gestor de conocimiento te haré preguntas, usa tu File search o tu Code interpreter para abrir y leer los archivos proporcionados, cuando sea necesario.
+        Eres Thinker, la Inteligencia Artificial Generativa de Alaya, un asistente virtual que te ayudará a encontrar información relevante en documentos y fuentes de conocimiento.
+        Cumple con las siguientes instrucciones para generar tu respuesta:
+        1. Adicionalmente, agrega análisis, razonamientos y justificaciones de tu respuesta.
+        2. Tu respuesta debe incluir la mayor cantidad de información que pueda estar relacionada con la pregunta.
+        3. Escribe tu respuesta de forma estructurada e incluye listados si es necesario
+        4. Adicionalmente, agrega análisis, razonamientos y justificaciones de tu respuesta.
+        5. Si es un archivo excel o CSV, usa el Code Interpreter para analizar el archivo y así poder responder la pregunta.
+        6. buscar la informacion solo en los archivos: ${attachmentsSearch}
+        7. Si la información no esta en los archivos especificados, no extraigas ninguna información, y no menciones información de otra fuente
+        8. Si hay fechas, números, estadísticas, nombre, incluye esos detalles en tu respuesta
+        9. Responde siempre en español
+        10. Sé cordial cuando te saluden y despidan
+        11. Si es un archivo excel o CSV, usa el Code Interpreter para analizar el archivo y así poder responder la pregunta.
+        Pregunta:
+        `;
+
     // 1. Start a new thread
-    logger.info(`thread: ${objectResponse.thread_id_openai || "New Thread"}`);
-    if (threadId === "") {
-      const thread = await assistantsClient.beta.threads.create();
-      logger.info(`Nueva conversación iniciada creado", ID: ${thread.id}`);
-      objectResponse.thread_id_openai = thread.id;
+    if (objectResponse.thread_id_openai === "") {
+      const threadIdResponse = await createThread(vectorStore, assistantsClient);
+      objectResponse.thread_id_openai = threadIdResponse;
     }
 
     // 2. add message to thread
-    const message: any = await assistantsClient.beta.threads.messages.create(objectResponse.thread_id_openai, {
-      role: "user",
-      content: content,
-      attachments: attachments,
-    });
-    logger.info({ messageSended: message.content[0].text.value });
+    await messageThread(assistantsClient, objectResponse.thread_id_openai, attachmentsCode, content);
 
     // 3. Run stream
     const run = assistantsClient.beta.threads.runs
@@ -112,7 +127,7 @@ export const chatAssistant = async (req: Request, res: Response, next: any): Pro
         stream: true,
         temperature: 0.03,
         top_p: 1,
-        model: "gpt-4o",
+        model: "gpt-4o-3",
         instructions: instruction,
       })
       .on("textCreated", (text) => process.stdout.write("\ntextCreated assistant > "))

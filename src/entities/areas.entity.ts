@@ -15,6 +15,9 @@ export class AreaEntity {
   @Column()
   asistente: string;
 
+  @Column()
+  vectores: string;
+
   @ManyToOne(() => EmpresaEntity, (empresaEntity) => empresaEntity.areas)
   @JoinColumn({ name: "id_empresa" }) // FK
   empresa: EmpresaEntity;
