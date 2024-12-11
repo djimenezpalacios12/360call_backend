@@ -65,20 +65,20 @@ export const chatAssistant = async (req: Request, res: Response, next: any): Pro
     const assistantId = credentials.asistente;
     const vectorStore = credentials.vectores;
 
-    const content = body[body.length - 1]?.content;
+    const content = body[body?.length - 1]?.content;
     let text = "";
     const objectResponse = {
       response: "",
       id_file_download: "",
-      thread_id_openai: body[body.length - 1]?.threadId,
+      thread_id_openai: body[body?.length - 1]?.threadId,
       id_image_download: "",
     };
 
     // Create attachment for code_interpreter and file list for system prompt
     const attachmentsCode: MessageCreateParams.Attachment[] | null | undefined = [];
     const attachmentsSearch: string[] = [];
-    if (body[body.length - 1]?.filesCodeInterpreter.length > 0) {
-      const idFiles = body[body.length - 1]?.filesCodeInterpreter;
+    if (body[body?.length - 1]?.filesCodeInterpreter?.length > 0) {
+      const idFiles = body[body?.length - 1]?.filesCodeInterpreter;
       idFiles.forEach((idFile: string) => {
         attachmentsCode.push({
           file_id: idFile,
@@ -87,8 +87,8 @@ export const chatAssistant = async (req: Request, res: Response, next: any): Pro
       });
     }
 
-    if (body[body.length - 1]?.fileSeach.length > 0) {
-      const idFiles = body[body.length - 1]?.fileSeach;
+    if (body[body?.length - 1]?.fileSearch.length > 0) {
+      const idFiles = body[body?.length - 1]?.fileSearch;
       idFiles.forEach((fileName: string) => {
         attachmentsSearch.push(fileName);
       });
@@ -127,7 +127,7 @@ export const chatAssistant = async (req: Request, res: Response, next: any): Pro
         stream: true,
         temperature: 0.03,
         top_p: 1,
-        model: "gpt-4o-3",
+        model: "gpt-4o",
         instructions: instruction,
       })
       .on("textCreated", (text) => process.stdout.write("\ntextCreated assistant > "))
