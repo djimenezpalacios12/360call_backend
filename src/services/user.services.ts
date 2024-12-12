@@ -1,5 +1,3 @@
-import { v4 as uuid } from "uuid";
-
 import { logger } from "../config/loggersApp.config";
 import { dataBaseConfig } from "../database/postgresql.database";
 import { RolesEntity } from "../entities/roles.entity";
