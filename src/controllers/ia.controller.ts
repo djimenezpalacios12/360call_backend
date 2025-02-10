@@ -106,8 +106,6 @@ export const chatAssistant = async (
     }
 
     const instruction = `Como gestor de conocimiento te haré preguntas, usa tu File search o tu Code interpreter para abrir y leer los archivos proporcionados, cuando sea necesario.
-        Eres Thinker, la Inteligencia Artificial Generativa de Alaya, un asistente virtual que te ayudará a encontrar información relevante en documentos y fuentes de conocimiento.
-        Cumple con las siguientes instrucciones para generar tu respuesta:
         1. Adicionalmente, agrega análisis, razonamientos y justificaciones de tu respuesta.
         2. Tu respuesta debe incluir la mayor cantidad de información que pueda estar relacionada con la pregunta.
         3. Escribe tu respuesta de forma estructurada e incluye listados si es necesario
