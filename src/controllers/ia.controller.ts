@@ -3,14 +3,21 @@ import createError from "http-errors";
 import { MessageCreateParams } from "openai/resources/beta/threads/messages";
 
 import { logger } from "../config/loggersApp.config";
+import { getClient } from "../utils/azure.utils";
 import { decodedToken, splitTokenParts } from "../utils/token.utils";
 import { endpointResponse } from "../utils/endpointResponse.utils";
-import { userCredentialsAi } from "../services/auth.services";
-import { getClient } from "../utils/azure.utils";
+import { sendActionBitacora } from "../services/bitacora.services";
 import { donwloadFileServices } from "../services/donwloadFile.services";
+import {
+  areaCredentialsAi,
+  retrieveUserWithEmail,
+  userCredentialsAi,
+} from "../services/auth.services";
 import { createThread, messageThread } from "../services/openai.services";
 
-// Download File from IA
+/**
+ * Download File using id store generated for GPT
+ */
 export const downloadFileIA = async (
   req: Request,
   res: Response,
@@ -32,6 +39,12 @@ export const downloadFileIA = async (
       mimeTypes: file_base64?.mimeTypeDetected,
     };
 
+    // Call services MS Bitacora
+    await sendActionBitacora(
+      tokenparts[1],
+      `Archivo generador por Thinker", ID: ${idFile}`
+    );
+
     return res.json(endpointResponse(new Date(), "success", 200, fileContent));
   } catch (err: any) {
     logger.error({ err: err.message });
@@ -39,6 +52,9 @@ export const downloadFileIA = async (
   }
 };
 
+/**
+ * Chat bot with assistant and fileSearch & Code Interpreter
+ */
 export const chatAssistant = async (
   req: Request,
   res: Response,
@@ -57,7 +73,7 @@ export const chatAssistant = async (
     const Authorization =
       req.get("Authorization") || req.query.token || req.body.token;
     const tokenparts = splitTokenParts(Authorization);
-    const dataFromToken: any = decodedAnyToken(Authorization);
+    const dataFromToken: any = decodedToken(Authorization);
 
     const user_data = await retrieveUserWithEmail(
       dataFromToken?.payload?.preferred_username.toLowerCase()
@@ -115,7 +131,9 @@ export const chatAssistant = async (
       });
     }
 
-    const instruction = `Como gestor de conocimiento te haré preguntas, usa tu File search o tu Code interpreter para abrir y leer los archivos proporcionados
+    const instruction = `Como gestor de conocimiento te haré preguntas, usa tu File search o tu Code interpreter para abrir y leer los archivos proporcionados, cuando sea necesario.
+        Eres Thinker, la Inteligencia Artificial Generativa de Alaya, un asistente virtual que te ayudará a encontrar información relevante en documentos y fuentes de conocimiento.
+        Cumple con las siguientes instrucciones para generar tu respuesta:
         1. Adicionalmente, agrega análisis, razonamientos y justificaciones de tu respuesta.
         2. Tu respuesta debe incluir la mayor cantidad de información que pueda estar relacionada con la pregunta.
         3. Escribe tu respuesta de forma estructurada e incluye listados si es necesario
@@ -154,7 +172,9 @@ export const chatAssistant = async (
         assistant_id: assistantId,
       })
       .on("textCreated", () => console.log("assistant >"))
-      .on("toolCallCreated", (event) => console.log("assistant " + event.type))
+      .on("toolCallCreated", (event: any) =>
+        console.log("assistant " + event.type)
+      )
       .on("textDelta", (textDelta: any) => {
         console.log("Received textDelta:", textDelta);
         if (textDelta && typeof textDelta.value === "string") {
@@ -166,7 +186,7 @@ export const chatAssistant = async (
         }
         res.write(JSON.stringify(objectResponse));
       })
-      .on("messageDone", async (event) => {
+      .on("messageDone", async (event: any) => {
         if (event.content[0].type === "text") {
           const { text: textDelta } = event.content[0];
           const { annotations } = textDelta;
