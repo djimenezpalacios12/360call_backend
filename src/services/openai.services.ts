@@ -5,23 +5,17 @@ import { logger } from "../config/loggersApp.config";
 
 // 1. thread
 export const createThread = async (
-  tokenparts: string[],
   vectorStore: string,
   assistantsClient: AzureOpenAI
 ) => {
-  try {
-    const thread = await assistantsClient.beta.threads.create({
-      tool_resources: {
-        file_search: { vector_store_ids: [vectorStore] },
-      },
-    });
+  const thread = await assistantsClient.beta.threads.create({
+    tool_resources: {
+      file_search: { vector_store_ids: [vectorStore] },
+    },
+  });
 
-    logger.info(`Nueva conversación iniciada creado", ID: ${thread.id}`);
-
-    return thread.id;
-  } catch (err) {
-    logger.error(err);
-  }
+  logger.info(`Nueva conversación iniciada creado", ID: ${thread.id}`);
+  return thread.id;
 };
 
 // 2. messages

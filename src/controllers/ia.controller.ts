@@ -3,21 +3,14 @@ import createError from "http-errors";
 import { MessageCreateParams } from "openai/resources/beta/threads/messages";
 
 import { logger } from "../config/loggersApp.config";
-import { getClient } from "../utils/azure.utils";
 import { decodedToken, splitTokenParts } from "../utils/token.utils";
 import { endpointResponse } from "../utils/endpointResponse.utils";
-import { sendActionBitacora } from "../services/bitacora.services";
+import { userCredentialsAi } from "../services/auth.services";
+import { getClient } from "../utils/azure.utils";
 import { donwloadFileServices } from "../services/donwloadFile.services";
-import {
-  areaCredentialsAi,
-  retrieveUserWithEmail,
-  userCredentialsAi,
-} from "../services/auth.services";
 import { createThread, messageThread } from "../services/openai.services";
 
-/**
- * Download File using id store generated for GPT
- */
+// Download File from IA
 export const downloadFileIA = async (
   req: Request,
   res: Response,
@@ -39,12 +32,6 @@ export const downloadFileIA = async (
       mimeTypes: file_base64?.mimeTypeDetected,
     };
 
-    // Call services MS Bitacora
-    await sendActionBitacora(
-      tokenparts[1],
-      `Archivo generador por Thinker", ID: ${idFile}`
-    );
-
     return res.json(endpointResponse(new Date(), "success", 200, fileContent));
   } catch (err: any) {
     logger.error({ err: err.message });
@@ -52,9 +39,7 @@ export const downloadFileIA = async (
   }
 };
 
-/**
- * Chat bot with assistant and fileSearch & Code Interpreter
- */
+// Chat with assistant
 export const chatAssistant = async (
   req: Request,
   res: Response,
@@ -72,18 +57,11 @@ export const chatAssistant = async (
     // Credentiales User
     const Authorization =
       req.get("Authorization") || req.query.token || req.body.token;
-    const tokenparts = splitTokenParts(Authorization);
-    const dataFromToken: any = decodedToken(Authorization);
+    const infoUser: any = decodedToken(Authorization);
+    const id_usuario = infoUser?.payload?.id_usuario;
+    const credentials = await userCredentialsAi(id_usuario);
 
-    const user_data = await retrieveUserWithEmail(
-      dataFromToken?.payload?.preferred_username.toLowerCase()
-    );
-    const id_usuario = user_data?.id_usuario;
-
-    const credentials = await areaCredentialsAi(id_usuario as string);
-    const credentialsUser = await userCredentialsAi(id_usuario as string);
-
-    if (!credentials || !credentialsUser) {
+    if (!credentials) {
       logger.error({ err: "No se encuentran las credenciales del usuario" });
       return next(
         createError(500, {
@@ -94,19 +72,15 @@ export const chatAssistant = async (
 
     // IA parameters
     const assistantsClient = getClient();
-    const assistantId = body[body.length - 1]?.closeFiles
-      ? credentials.asistente
-      : credentialsUser.asistente;
-    const vectorStore = body[body.length - 1]?.closeFiles
-      ? credentials.vectores
-      : credentialsUser.vectores;
+    const assistantId = credentials.asistente;
+    const vectorStore = credentials.vectores;
 
-    const content = body[body.length - 1]?.content;
+    const content = body[body?.length - 1]?.content;
     let text = "";
     const objectResponse = {
       response: "",
       id_file_download: "",
-      thread_id_openai: body[body.length - 1]?.threadId,
+      thread_id_openai: body[body?.length - 1]?.threadId,
       id_image_download: "",
     };
 
@@ -114,8 +88,8 @@ export const chatAssistant = async (
     const attachmentsCode: MessageCreateParams.Attachment[] | null | undefined =
       [];
     const attachmentsSearch: string[] = [];
-    if (body[body.length - 1]?.filesCodeInterpreter.length > 0) {
-      const idFiles = body[body.length - 1]?.filesCodeInterpreter;
+    if (body[body?.length - 1]?.filesCodeInterpreter?.length > 0) {
+      const idFiles = body[body?.length - 1]?.filesCodeInterpreter;
       idFiles.forEach((idFile: string) => {
         attachmentsCode.push({
           file_id: idFile,
@@ -124,8 +98,8 @@ export const chatAssistant = async (
       });
     }
 
-    if (body[body.length - 1]?.fileSeach.length > 0) {
-      const idFiles = body[body.length - 1]?.fileSeach;
+    if (body[body?.length - 1]?.fileSearch.length > 0) {
+      const idFiles = body[body?.length - 1]?.fileSearch;
       idFiles.forEach((fileName: string) => {
         attachmentsSearch.push(fileName);
       });
@@ -151,7 +125,6 @@ export const chatAssistant = async (
     // 1. Start a new thread
     if (objectResponse.thread_id_openai === "") {
       const threadIdResponse = await createThread(
-        tokenparts,
         vectorStore,
         assistantsClient
       );
@@ -166,6 +139,7 @@ export const chatAssistant = async (
       content
     );
 
+    // 3. Run stream
     // 3. Run stream
     const stream = assistantsClient.beta.threads.runs
       .stream(objectResponse.thread_id_openai, {
