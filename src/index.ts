@@ -13,6 +13,7 @@ import { dataBaseConfig } from "./database/postgresql.database";
 
 import authRoutes from "./routes/auth.route";
 import iaRoutes from "./routes/ia.route";
+import filesRoutes from "./routes/files.route";
 
 // Express
 const app = express();
@@ -35,7 +36,10 @@ app.use(cors());
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Headers", "Authorization, Origin, X-Requested-With, Content-Type, Accept, Access-Control-Allow-Request-Method");
+  res.header(
+    "Access-Control-Allow-Headers",
+    "Authorization, Origin, X-Requested-With, Content-Type, Accept, Access-Control-Allow-Request-Method"
+  );
   res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, DELETE");
   res.header("Allow", "GET, POST, OPTIONS, PUT, DELETE");
   next();
@@ -50,7 +54,7 @@ app.use((req, res, next) => {
 //Swagger
 const swaggerOptions: any = {
   swaggerDefinition: {
-    openapi: "3.0.1",
+    openapi: "1.0.0",
     info: {
       version: "1.0.0",
       title: "Microservice API",
@@ -84,13 +88,14 @@ const swaggerOptions: any = {
 const swaggerDocs = swaggerJsDoc(swaggerOptions);
 app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
-//Routes Middlware
+// Routes Middlware
 app.use(express.json());
 app.get("/", (req: any, res: any) => {
   res.status(200).json({ message: "Bienvenido..." });
 });
 app.use("/v1/api/auth", authRoutes);
 app.use("/v1/api/ia", iaRoutes);
+app.use("/v1/api/files", filesRoutes);
 
 // Error handler - catch 404 and forward to error handler
 app.use(function (req, res, next) {
@@ -105,7 +110,9 @@ app.use(function (err: any, req: any, res: any, next: any) {
   if (req.originalUrl.startsWith("/v1/api/")) {
     // receive API error
     logger.error({ err });
-    res.send(endpointResponse(new Date(), err.message, err.status, err || null));
+    res.send(
+      endpointResponse(new Date(), err.message, err.status, err || null)
+    );
     return;
   }
   res.json({ error: err.message });

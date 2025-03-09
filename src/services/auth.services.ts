@@ -27,12 +27,14 @@ export const userCredentialsAi = async (id_usuario: string) => {
     const userCredentials = await dataBaseConfig
       .getRepository(AreaEntity)
       .createQueryBuilder()
-      .leftJoinAndSelect(UsuariosEntity, "UsuariosEntity", "UsuariosEntity.id_area = AreaEntity.id_area")
+      .leftJoinAndSelect(
+        UsuariosEntity,
+        "UsuariosEntity",
+        "UsuariosEntity.id_area = AreaEntity.id_area"
+      )
       .where("UsuariosEntity.id_usuario = :id_usuario", {
         id_usuario: id_usuario,
       })
-      //   .where("RolesEntity.id_rol = :id_rol", { id_rol: id_rol })
-      //   .select(["RolesEntity.rol"])
       .getOne();
 
     return userCredentials;
