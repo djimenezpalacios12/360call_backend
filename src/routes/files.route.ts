@@ -5,7 +5,7 @@ import jwtAuth from "../middleware/jwt.middleware";
 import {
   getFilesFromStorageController,
   uploadFilesInStorageController,
-  uploadFilesInStorageAssistantAreaController,
+  uploadFilesInStorageAssistantController,
 } from "../controllers/storage.controller";
 
 const router: Router = Router();
@@ -22,7 +22,7 @@ router.post(
   "/assistant",
   jwtAuth,
   upload.array("files", 100),
-  uploadFilesInStorageAssistantAreaController
+  uploadFilesInStorageAssistantController
 );
 
 export default router;

@@ -85,9 +85,9 @@ export const uploadFilesInStorageController = async (
 };
 
 /**
- * Controller for uploading files to storage and Assistant (Area)
+ * Controller for uploading files to storage and Assistant
  */
-export const uploadFilesInStorageAssistantAreaController = async (
+export const uploadFilesInStorageAssistantController = async (
   req: Request,
   res: Response,
   next: any
