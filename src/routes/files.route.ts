@@ -4,7 +4,8 @@ import multer from "multer";
 import jwtAuth from "../middleware/jwt.middleware";
 import {
   getFilesFromStorageController,
-  uploadFilesFromStorageController,
+  uploadFilesInStorageController,
+  uploadFilesInStorageAssistantAreaController,
 } from "../controllers/storage.controller";
 
 const router: Router = Router();
@@ -15,7 +16,13 @@ router.post(
   "/",
   jwtAuth,
   upload.array("files", 100),
-  uploadFilesFromStorageController
+  uploadFilesInStorageController
+);
+router.post(
+  "/assistant",
+  jwtAuth,
+  upload.array("files", 100),
+  uploadFilesInStorageAssistantAreaController
 );
 
 export default router;
