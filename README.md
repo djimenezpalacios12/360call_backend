@@ -129,10 +129,3 @@ docker run -p 8001:8001 template-express:v1
 ```
 docker run --env-file .env template-express:v1
 ```
-
-## Author
-
-👤 **Alaya Digital Solutions**
-
-- Website: https://www.alaya.cl/
-- Github: [@alaya-digital-solutions](https://github.com/alaya-digital-solutions)
